@@ -204,6 +204,21 @@ class MissionAuthorization {
     }
 
     /**
+     * Get missions for a specific member
+     */
+    public function getMissionsByMember($member_id) {
+        $query = "SELECT * FROM " . $this->table_name . "
+                WHERE member_id = :member_id
+                ORDER BY departure_date DESC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":member_id", $member_id);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Get dashboard statistics
      */
     public function getDashboardStats($user_id) {
