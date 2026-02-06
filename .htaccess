@@ -3,7 +3,7 @@
 # Enable Rewrite Engine
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /
+    RewriteBase /team_heart/
     
     # Redirect .php files to extension-less URLs
     RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s([^.\s]+)\.php [NC]
