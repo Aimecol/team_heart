@@ -40,7 +40,7 @@ function getCurrentUser() {
  */
 function requireLogin() {
     if (!isLoggedIn()) {
-        header("Location: /login.php");
+        header("Location: ./login.php");
         exit();
     }
 }
@@ -50,7 +50,7 @@ function requireLogin() {
  */
 function redirectIfLoggedIn() {
     if (isLoggedIn()) {
-        header("Location: /dashboard.php");
+        header("Location: ./dashboard.php");
         exit();
     }
 }
@@ -67,7 +67,7 @@ function hasRole($role) {
  */
 function logout() {
     session_destroy();
-    header("Location: /login.php");
+    header("Location: ./login.php");
     exit();
 }
 
