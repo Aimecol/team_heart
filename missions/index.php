@@ -45,7 +45,8 @@ $flash = getFlashMessage();
 
         <?php if (count($missions) > 0): ?>
             <div class="bg-white rounded-lg shadow overflow-hidden">
-                <table class="min-w-full">
+                <div class="overflow-x-auto">
+                <table class="w-full">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Authorization #</th>
@@ -108,6 +109,7 @@ $flash = getFlashMessage();
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                </div>
             </div>
         <?php else: ?>
             <div class="bg-white rounded-lg shadow p-12 text-center">
