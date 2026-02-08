@@ -197,20 +197,29 @@ class Member {
      * Generate unique employee ID
      */
     public function generateEmployeeId() {
-        $year = date('Y');
-        
-        // Count members created this year
-        $query = "SELECT COUNT(*) as count FROM " . $this->table_name . "
-                WHERE YEAR(created_at) = :year AND employee_id IS NOT NULL";
+        // Get the highest ID number from existing employee IDs
+        $query = "SELECT employee_id FROM " . $this->table_name . "
+                WHERE employee_id IS NOT NULL
+                ORDER BY member_id DESC LIMIT 1";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":year", $year);
         $stmt->execute();
         
         $result = $stmt->fetch();
-        $count = $result['count'] + 1;
+        $nextNumber = 1;
         
-        return 'TH-' . $year . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+        if ($result && !empty($result['employee_id'])) {
+            // Extract the numeric part from the last ID (TH-YYYY-XXXX)
+            $lastId = $result['employee_id'];
+            $parts = explode('-', $lastId);
+            if (count($parts) >= 3) {
+                $lastNumber = intval(end($parts));
+                $nextNumber = $lastNumber + 1;
+            }
+        }
+        
+        $year = date('Y');
+        return 'TH-' . $year . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
     }
 }
 ?>
