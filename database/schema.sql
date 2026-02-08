@@ -3,11 +3,17 @@
 -- MySQL Database Schema
 -- ============================================
 
+-- Create database
+CREATE DATABASE IF NOT EXISTS team_heart_missions CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE team_heart_missions;
+
 -- Drop existing tables (in reverse order of dependencies)
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS report_attachments;
+DROP TABLE IF EXISTS reports;
 DROP TABLE IF EXISTS mission_authorizations;
 DROP TABLE IF EXISTS members;
 DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS audit_logs;
 
 -- ============================================
 -- USERS TABLE
@@ -20,8 +26,8 @@ CREATE TABLE users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
-    role ENUM('admin', 'manager', 'staff') DEFAULT 'staff',
-    status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
+    role ENUM('admin', 'member') DEFAULT 'member',
+    status ENUM('pending', 'active', 'rejected', 'suspended') DEFAULT 'pending',
     email_verified BOOLEAN DEFAULT FALSE,
     email_verification_token VARCHAR(255),
     password_reset_token VARCHAR(255),
@@ -43,7 +49,7 @@ CREATE TABLE users (
 -- ============================================
 CREATE TABLE members (
     member_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL UNIQUE,  -- Each user is also a member
     
     -- Personal Information
     first_name VARCHAR(100) NOT NULL,
@@ -51,7 +57,7 @@ CREATE TABLE members (
     middle_name VARCHAR(100),
     date_of_birth DATE,
     gender ENUM('male', 'female', 'other'),
-    nationality VARCHAR(100),
+    nationality VARCHAR(100) DEFAULT 'Rwanda',
     
     -- Contact Information
     email VARCHAR(255),
@@ -137,7 +143,7 @@ CREATE TABLE mission_authorizations (
     budget_approved_date DATE,
     
     -- Status Tracking
-    status ENUM('draft', 'pending', 'approved', 'rejected', 'completed', 'cancelled') DEFAULT 'draft',
+    status ENUM('draft', 'pending', 'approved', 'rejected', 'completed', 'cancelled') DEFAULT 'pending',
     approval_notes TEXT,
     rejection_reason TEXT,
     
@@ -176,6 +182,78 @@ CREATE TABLE mission_authorizations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
+-- REPORTS TABLE
+-- Stores mission reports with rich-text content
+-- ============================================
+CREATE TABLE reports (
+    report_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    authorization_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    member_id INT UNSIGNED NOT NULL,
+    
+    -- Report Content
+    title VARCHAR(500) NOT NULL,
+    content LONGTEXT NOT NULL,  -- HTML from WYSIWYG editor
+    summary TEXT,
+    
+    -- Metadata
+    status ENUM('draft', 'submitted', 'under-review', 'approved', 'rejected') DEFAULT 'draft',
+    submission_date DATETIME,
+    approval_notes TEXT,
+    rejection_reason TEXT,
+    
+    -- Tracking
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    submitted_at DATETIME,
+    created_by INT UNSIGNED NOT NULL,
+    updated_by INT UNSIGNED,
+    
+    FOREIGN KEY (authorization_id) REFERENCES mission_authorizations(authorization_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (member_id) REFERENCES members(member_id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(user_id),
+    FOREIGN KEY (updated_by) REFERENCES users(user_id),
+    
+    INDEX idx_authorization_id (authorization_id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_member_id (member_id),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at),
+    INDEX idx_submitted_at (submitted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- REPORT ATTACHMENTS TABLE
+-- Stores file uploads for reports
+-- ============================================
+CREATE TABLE report_attachments (
+    attachment_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    report_id INT UNSIGNED NOT NULL,
+    
+    -- File Information
+    original_filename VARCHAR(500) NOT NULL,
+    stored_filename VARCHAR(500) NOT NULL UNIQUE,
+    file_path VARCHAR(1000) NOT NULL,  -- Relative path from uploads directory
+    file_size INT UNSIGNED NOT NULL,
+    mime_type VARCHAR(100),
+    file_extension VARCHAR(20),
+    
+    -- Metadata
+    description TEXT,
+    uploaded_by INT UNSIGNED NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (report_id) REFERENCES reports(report_id) ON DELETE CASCADE,
+    FOREIGN KEY (uploaded_by) REFERENCES users(user_id),
+    
+    INDEX idx_report_id (report_id),
+    INDEX idx_uploaded_by (uploaded_by),
+    INDEX idx_created_at (created_at),
+    INDEX idx_stored_filename (stored_filename)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
 -- AUDIT LOGS TABLE
 -- Tracks all changes for compliance
 -- ============================================
@@ -201,7 +279,37 @@ CREATE TABLE audit_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
--- VIEWS FOR COMMON QUERIES
+-- INSERT SAMPLE DATA
+-- ============================================
+
+-- Insert sample admin user (password: Admin@123)
+-- Password hash generated with: password_hash('Admin@123', PASSWORD_BCRYPT)
+INSERT INTO users (email, password_hash, first_name, last_name, role, status, email_verified) VALUES 
+    ('admin@teamheartrw.org', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System', 'Administrator', 'admin', 'active', TRUE),
+    ('member1@teamheartrw.org', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Mugumanyi', 'Faustin', 'member', 'active', TRUE),
+    ('member2@teamheartrw.org', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jane', 'Smith', 'member', 'pending', TRUE);
+
+-- Insert sample members (linked to users)
+INSERT INTO members (
+    user_id, first_name, last_name, email, phone, position, 
+    department, employee_id, status, created_by
+) VALUES 
+    (2, 'Mugumanyi', 'Faustin', 'member1@teamheartrw.org', '+250788123456', 
+     'Cardiac Nurse Educator and Mentor', 'Medical', 'TH-2025-001', 'active', 1),
+    (3, 'Jane', 'Smith', 'member2@teamheartrw.org', '+250788654321', 
+     'Field Coordinator', 'Operations', 'TH-2025-002', 'active', 1);
+
+-- Insert sample mission authorization
+INSERT INTO mission_authorizations (
+    user_id, member_id, authorization_number, mission_purpose, destination,
+    departure_date, return_date, duration_days, status, created_by
+) VALUES (
+    2, 1, 'MA-2025-0001', 'October pre-screening activities', 
+    'Kigali – Kibogora – Kabyayi', '2025-09-10', '2025-09-12', 3, 'pending', 2
+);
+
+-- ============================================
+-- CREATE VIEWS
 -- ============================================
 
 -- Active Members View
@@ -245,184 +353,16 @@ FROM mission_authorizations ma
 INNER JOIN members m ON ma.member_id = m.member_id
 INNER JOIN users u ON ma.created_by = u.user_id;
 
--- Pending Authorizations View
-CREATE OR REPLACE VIEW v_pending_authorizations AS
-SELECT 
-    ma.*,
-    CONCAT(m.first_name, ' ', m.last_name) AS traveler_name,
-    m.position AS traveler_position
-FROM mission_authorizations ma
-INNER JOIN members m ON ma.member_id = m.member_id
-WHERE ma.status IN ('draft', 'pending')
-ORDER BY ma.departure_date ASC;
-
 -- ============================================
--- STORED PROCEDURES
+-- ADDITIONAL INDEXES FOR PERFORMANCE
 -- ============================================
 
--- Procedure to create a new mission authorization
-DELIMITER //
-CREATE PROCEDURE sp_create_mission_authorization(
-    IN p_user_id INT UNSIGNED,
-    IN p_member_id INT UNSIGNED,
-    IN p_mission_purpose TEXT,
-    IN p_destination TEXT,
-    IN p_departure_date DATE,
-    IN p_return_date DATE,
-    OUT p_authorization_id INT UNSIGNED,
-    OUT p_authorization_number VARCHAR(50)
-)
-BEGIN
-    DECLARE v_duration INT;
-    DECLARE v_year VARCHAR(4);
-    DECLARE v_count INT;
-    
-    -- Calculate duration
-    SET v_duration = DATEDIFF(p_return_date, p_departure_date) + 1;
-    
-    -- Generate authorization number (e.g., MA-2025-0001)
-    SET v_year = YEAR(CURDATE());
-    
-    SELECT COUNT(*) + 1 INTO v_count
-    FROM mission_authorizations
-    WHERE YEAR(created_at) = v_year;
-    
-    SET p_authorization_number = CONCAT('MA-', v_year, '-', LPAD(v_count, 4, '0'));
-    
-    -- Insert the record
-    INSERT INTO mission_authorizations (
-        user_id,
-        member_id,
-        authorization_number,
-        mission_purpose,
-        destination,
-        departure_date,
-        return_date,
-        duration_days,
-        status,
-        created_by
-    ) VALUES (
-        p_user_id,
-        p_member_id,
-        p_authorization_number,
-        p_mission_purpose,
-        p_destination,
-        p_departure_date,
-        p_return_date,
-        v_duration,
-        'draft',
-        p_user_id
-    );
-    
-    SET p_authorization_id = LAST_INSERT_ID();
-END //
-DELIMITER ;
-
--- Procedure to approve mission authorization
-DELIMITER //
-CREATE PROCEDURE sp_approve_mission_authorization(
-    IN p_authorization_id INT UNSIGNED,
-    IN p_approved_by_user_id INT UNSIGNED,
-    IN p_authorized_by_name VARCHAR(255),
-    IN p_authorized_by_position VARCHAR(255),
-    IN p_approval_notes TEXT
-)
-BEGIN
-    UPDATE mission_authorizations
-    SET 
-        status = 'approved',
-        authorized_by = p_authorized_by_name,
-        authorized_by_position = p_authorized_by_position,
-        authorization_date = CURDATE(),
-        approval_notes = p_approval_notes,
-        updated_by = p_approved_by_user_id,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE authorization_id = p_authorization_id;
-END //
-DELIMITER ;
+CREATE INDEX idx_member_user_status ON members(user_id, status);
+CREATE INDEX idx_mission_member_status ON mission_authorizations(member_id, status);
+CREATE INDEX idx_mission_dates ON mission_authorizations(departure_date, return_date);
 
 -- ============================================
--- TRIGGERS FOR AUDIT LOGGING
--- ============================================
-
-DELIMITER //
-
--- Trigger for mission authorization INSERT
-CREATE TRIGGER trg_mission_auth_insert
-AFTER INSERT ON mission_authorizations
-FOR EACH ROW
-BEGIN
-    INSERT INTO audit_logs (user_id, table_name, record_id, action, new_values)
-    VALUES (NEW.created_by, 'mission_authorizations', NEW.authorization_id, 'INSERT', 
-            JSON_OBJECT(
-                'authorization_number', NEW.authorization_number,
-                'member_id', NEW.member_id,
-                'status', NEW.status
-            ));
-END //
-
--- Trigger for mission authorization UPDATE
-CREATE TRIGGER trg_mission_auth_update
-AFTER UPDATE ON mission_authorizations
-FOR EACH ROW
-BEGIN
-    INSERT INTO audit_logs (user_id, table_name, record_id, action, old_values, new_values)
-    VALUES (NEW.updated_by, 'mission_authorizations', NEW.authorization_id, 'UPDATE',
-            JSON_OBJECT(
-                'status', OLD.status,
-                'authorized_by', OLD.authorized_by
-            ),
-            JSON_OBJECT(
-                'status', NEW.status,
-                'authorized_by', NEW.authorized_by
-            ));
-END //
-
-DELIMITER ;
-
--- ============================================
--- SAMPLE DATA INSERTION
--- ============================================
-
--- Insert sample admin user (password: Admin@123 - should be properly hashed in production)
-INSERT INTO users (email, password_hash, first_name, last_name, role, status, email_verified)
-VALUES 
-    ('admin@teamheartrw.org', '$2y$10$examplehash', 'System', 'Administrator', 'admin', 'active', TRUE),
-    ('manager@teamheartrw.org', '$2y$10$examplehash', 'John', 'Doe', 'manager', 'active', TRUE),
-    ('staff@teamheartrw.org', '$2y$10$examplehash', 'Jane', 'Smith', 'staff', 'active', TRUE);
-
--- Insert sample member
-INSERT INTO members (
-    user_id, first_name, last_name, email, phone, position, 
-    department, employee_id, status, created_by
-)
-VALUES 
-    (2, 'Mugumanyi', 'Faustin', 'faustin@teamheartrw.org', '+250788123456', 
-     'Cardiac Nurse Educator and Mentor', 'Medical', 'TH-2025-001', 'active', 1);
-
--- Insert sample mission authorization
-CALL sp_create_mission_authorization(
-    2, -- user_id
-    1, -- member_id
-    'October pre-screening activities',
-    'Kigali – Kibogora – Kabyayi',
-    '2025-09-10',
-    '2025-09-12',
-    @auth_id,
-    @auth_number
-);
-
--- Approve the sample authorization
-CALL sp_approve_mission_authorization(
-    @auth_id,
-    1,
-    'MUREKEZI Dan Rene',
-    'Finance and Administration Officer',
-    'Approved for mission activities'
-);
-
--- ============================================
--- USEFUL QUERIES
+-- SAMPLE QUERIES (commented out)
 -- ============================================
 
 -- Get all missions for a specific member
@@ -437,15 +377,6 @@ CALL sp_approve_mission_authorization(
 -- Get member's mission history
 -- SELECT authorization_number, mission_purpose, destination, departure_date, return_date, status
 -- FROM mission_authorizations WHERE member_id = 1 ORDER BY departure_date DESC;
-
--- ============================================
--- INDEXES FOR PERFORMANCE
--- ============================================
-
--- Additional composite indexes for common queries
-CREATE INDEX idx_member_user_status ON members(user_id, status);
-CREATE INDEX idx_mission_member_status ON mission_authorizations(member_id, status);
-CREATE INDEX idx_mission_dates ON mission_authorizations(departure_date, return_date);
 
 -- ============================================
 -- END OF SCHEMA

@@ -10,12 +10,28 @@
                 <a href="./dashboard.php" class="text-gray-700 hover:text-blue-600 font-semibold transition">
                     Dashboard
                 </a>
-                <a href="./members/index.php" class="text-gray-700 hover:text-blue-600 font-semibold transition">
-                    Members
-                </a>
-                <a href="./missions/index.php" class="text-gray-700 hover:text-blue-600 font-semibold transition">
-                    Missions
-                </a>
+                
+                <?php if (isAdmin()): ?>
+                    <a href="./admin/users.php" class="text-gray-700 hover:text-blue-600 font-semibold transition">
+                        Users
+                    </a>
+                    <a href="./admin/missions.php" class="text-gray-700 hover:text-blue-600 font-semibold transition">
+                        Missions
+                    </a>
+                    <a href="./admin/reports.php" class="text-gray-700 hover:text-blue-600 font-semibold transition">
+                        Reports
+                    </a>
+                <?php else: ?>
+                    <a href="./member/my-missions.php" class="text-gray-700 hover:text-blue-600 font-semibold transition">
+                        My Missions
+                    </a>
+                    <a href="./member/create-mission.php" class="text-gray-700 hover:text-blue-600 font-semibold transition">
+                        Create Mission
+                    </a>
+                    <a href="./member/my-reports.php" class="text-gray-700 hover:text-blue-600 font-semibold transition">
+                        Reports
+                    </a>
+                <?php endif; ?>
                 
                 <div class="relative group">
                     <button class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 font-semibold">
@@ -24,8 +40,10 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
-                    <div class="absolute right-0 w-48 bg-white rounded-lg shadow-lg py-2 hidden group-hover:block z-50">
-                        <a href="./profile.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Profile</a>
+                    <div class="absolute right-0 w-48 bg-white rounded-lg shadow-lg overflow-hidden hidden group-hover:block z-50">
+                        <?php if (isMember()): ?>
+                            <a href="./member/profile.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Profile</a>
+                        <?php endif; ?>
                         <a href="./logout.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Logout</a>
                     </div>
                 </div>
@@ -42,9 +60,18 @@
         <!-- Mobile Navigation -->
         <div id="mobile-menu" class="hidden md:hidden pb-4">
             <a href="./dashboard.php" class="block py-2 text-gray-700 hover:text-blue-600">Dashboard</a>
-            <a href="./members/index.php" class="block py-2 text-gray-700 hover:text-blue-600">Members</a>
-            <a href="./missions/index.php" class="block py-2 text-gray-700 hover:text-blue-600">Missions</a>
-            <a href="./profile.php" class="block py-2 text-gray-700 hover:text-blue-600">Profile</a>
+            
+            <?php if (isAdmin()): ?>
+                <a href="./admin/users.php" class="block py-2 text-gray-700 hover:text-blue-600">Users</a>
+                <a href="./admin/missions.php" class="block py-2 text-gray-700 hover:text-blue-600">Missions</a>
+                <a href="./admin/reports.php" class="block py-2 text-gray-700 hover:text-blue-600">Reports</a>
+            <?php else: ?>
+                <a href="./member/my-missions.php" class="block py-2 text-gray-700 hover:text-blue-600">My Missions</a>
+                <a href="./member/create-mission.php" class="block py-2 text-gray-700 hover:text-blue-600">Create Mission</a>
+                <a href="./member/my-reports.php" class="block py-2 text-gray-700 hover:text-blue-600">Reports</a>
+                <a href="./member/profile.php" class="block py-2 text-gray-700 hover:text-blue-600">Profile</a>
+            <?php endif; ?>
+            
             <a href="./logout.php" class="block py-2 text-gray-700 hover:text-blue-600">Logout</a>
         </div>
     </div>
