@@ -178,5 +178,39 @@ class Member {
         }
         return '';
     }
+
+    /**
+     * Get member by user ID
+     */
+    public function getByUserId($user_id) {
+        $query = "SELECT * FROM " . $this->table_name . "
+                WHERE user_id = :user_id LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":user_id", $user_id);
+        $stmt->execute();
+
+        return $stmt->fetch();
+    }
+
+    /**
+     * Generate unique employee ID
+     */
+    public function generateEmployeeId() {
+        $year = date('Y');
+        
+        // Count members created this year
+        $query = "SELECT COUNT(*) as count FROM " . $this->table_name . "
+                WHERE YEAR(created_at) = :year AND employee_id IS NOT NULL";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":year", $year);
+        $stmt->execute();
+        
+        $result = $stmt->fetch();
+        $count = $result['count'] + 1;
+        
+        return 'TH-' . $year . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+    }
 }
 ?>
