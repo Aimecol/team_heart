@@ -3,7 +3,14 @@
 # Enable Rewrite Engine
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /
+    
+    # Detect if we're in a subdirectory
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # For subdirectory installations (e.g., /team_heart/)
+    RewriteCond %{REQUEST_URI} ^/team_heart/
+    RewriteBase /team_heart/
     
     # Redirect .php files to extension-less URLs
     RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s([^.\s]+)\.php [NC]

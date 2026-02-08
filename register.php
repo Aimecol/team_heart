@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user->first_name = $_POST['first_name'] ?? '';
         $user->last_name = $_POST['last_name'] ?? '';
         $user->phone = $_POST['phone'] ?? '';
-        $user->role = 'staff'; // Default role
+        $user->role = 'member'; // Default role
 
         // Validate
         if (empty($user->email) || empty($user->password_hash) || empty($user->first_name) || empty($user->last_name)) {
@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Email already registered';
         } else {
             if ($user->register()) {
-                $success = 'Registration successful! You can now login.';
+                $success = 'Registration successful! Your account is pending for approval. Your Employee ID has been automatically generated.';
             } else {
                 $error = 'Registration failed. Please try again.';
             }
