@@ -56,11 +56,14 @@ class User {
             $stmt->execute();
             $user_id = $this->conn->lastInsertId();
             
+            // Generate employee ID
+            $employee_id = $this->generateEmployeeId();
+            
             // Create member record
             $member_query = "INSERT INTO members 
-                    (user_id, first_name, last_name, email, phone, position, created_by)
+                    (user_id, first_name, last_name, email, phone, position, employee_id, created_by)
                     VALUES
-                    (:user_id, :first_name, :last_name, :email, :phone, 'Team Member', :user_id)";
+                    (:user_id, :first_name, :last_name, :email, :phone, 'Team Member', :employee_id, :user_id)";
             
             $member_stmt = $this->conn->prepare($member_query);
             $member_stmt->bindParam(":user_id", $user_id);
@@ -68,6 +71,7 @@ class User {
             $member_stmt->bindParam(":last_name", $this->last_name);
             $member_stmt->bindParam(":email", $this->email);
             $member_stmt->bindParam(":phone", $this->phone);
+            $member_stmt->bindParam(":employee_id", $employee_id);
             $member_stmt->execute();
             
             $this->conn->commit();
@@ -272,6 +276,35 @@ class User {
             return password_verify($password, $row['password_hash']);
         }
         return false;
+    }
+
+    /**
+     * Generate unique employee ID
+     */
+    private function generateEmployeeId() {
+        // Get the highest ID number from existing employee IDs
+        $query = "SELECT employee_id FROM members
+                WHERE employee_id IS NOT NULL
+                ORDER BY member_id DESC LIMIT 1";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        
+        $result = $stmt->fetch();
+        $nextNumber = 1;
+        
+        if ($result && !empty($result['employee_id'])) {
+            // Extract the numeric part from the last ID (TH-YYYY-XXXX)
+            $lastId = $result['employee_id'];
+            $parts = explode('-', $lastId);
+            if (count($parts) >= 3) {
+                $lastNumber = intval(end($parts));
+                $nextNumber = $lastNumber + 1;
+            }
+        }
+        
+        $year = date('Y');
+        return 'TH-' . $year . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
     }
 }
 ?>

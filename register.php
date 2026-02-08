@@ -2,7 +2,6 @@
 require_once 'config/session.php';
 require_once 'config/database.php';
 require_once 'models/User.php';
-require_once 'models/Member.php';
 
 redirectIfLoggedIn();
 
@@ -16,7 +15,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $database = new Database();
         $db = $database->getConnection();
         $user = new User($db);
-        $memberModel = new Member($db);
 
         $user->email = $_POST['email'] ?? '';
         $user->password_hash = $_POST['password'] ?? '';
@@ -36,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Email already registered';
         } else {
             if ($user->register()) {
-                $success = 'Registration successful! Your account is pending for approval.';
+                $success = 'Registration successful! Your account is pending for approval. Your Employee ID has been automatically generated.';
             } else {
                 $error = 'Registration failed. Please try again.';
             }

@@ -36,11 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'employee_id' => $_POST['employee_id'] ?? ''
         ];
 
-        // If employee_id is empty, auto-generate one
-        if (empty($data['employee_id'])) {
-            $data['employee_id'] = $memberModel->generateEmployeeId();
-        }
-
         // Validate required fields
         if (empty($data['first_name']) || empty($data['last_name']) || empty($data['email']) || empty($data['position'])) {
             $error = 'Please fill in all required fields';
@@ -221,16 +216,10 @@ $flash = getFlashMessage();
                                 <label class="block text-gray-700 text-sm font-bold mb-2" for="employee_id">
                                     Employee ID
                                 </label>
-                                <div class="flex gap-2">
-                                    <input type="text" name="employee_id" id="employee_id"
-                                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                        value="<?php echo htmlspecialchars($member['employee_id'] ?? ''); ?>" placeholder="Auto-generated">
-                                    <?php if (empty($member['employee_id'])): ?>
-                                        <button type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
-                                            onclick="generateEmployeeId()">Generate</button>
-                                    <?php endif; ?>
-                                </div>
-                                <p class="text-xs text-gray-500 mt-1">Leave empty to auto-generate on save</p>
+                                <input type="text" name="employee_id" id="employee_id"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                                    value="<?php echo htmlspecialchars($member['employee_id'] ?? 'Pending'); ?>" readonly>
+                                <p class="text-xs text-gray-500 mt-1">Auto-generated during registration</p>
                             </div>
                         </div>
                     </div>
@@ -338,18 +327,5 @@ $flash = getFlashMessage();
             </div>
         </div>
     </div>
-
-    <script>
-        function generateEmployeeId() {
-            // Get the employee ID input field
-            const employeeIdField = document.getElementById('employee_id');
-            
-            // Generate format: TH-YYYY-XXXX
-            const year = new Date().getFullYear();
-            const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-            
-            employeeIdField.value = `TH-${year}-${randomNum}`;
-        }
-    </script>
 </body>
 </html>
